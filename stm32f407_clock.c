@@ -37,3 +37,12 @@ void ConfigRCC(void)
 	RCC->CFGR &= RBIT(15);
 
 }
+
+
+
+void enablePeripherialCLK(void)
+{
+	RCC->AHB1ENR |= SBIT(3);
+}
+
+
