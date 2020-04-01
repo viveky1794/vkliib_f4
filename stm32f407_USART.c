@@ -80,6 +80,9 @@ void configUSART(void)
 		// Config Baud rate register
 		// --------------------------------------------------
 		// APB1CLK = 25MHz
+		// baudrate = 115200
+		// BRR = APB1CLK/baudrate = 25,000,000/115200 = 217.--
+		// 217 = 0xD9;
 		USART2->BRR = 0xd9;
 
 		// USART enable
