@@ -1,0 +1,112 @@
+
+#include <stm32f407xx.h>
+#include <core_cm4.h>
+#include <system_stm32f4xx.h>
+#include <stdint.h>
+
+#define SBIT(x)	((1<<x)) // Set Bit
+#define RBIT(x)	~(SBIT(x)) // Reset  Bit
+#define CBIT(x,y)	( ( (x)>>y ) & 0x1 ) // Check Bit
+
+
+void enablePeripherialCLK(void);
+void ConfigRCC(void);
+void toggleLED(uint8_t pin);
+
+int main()
+{
+	uint8_t pin = 13;
+	
+	
+	ConfigRCC();
+	enablePeripherialCLK();
+	
+	// Enable the Systick timer
+	// Set internal processor Clock.
+	SysTick->CTRL |= SBIT(0) | SBIT(2); 
+	
+	//System core Clock value is 16MHz
+		// Now LOAD register value = 16000 HZ
+		// Which means 1 sec = 1000ms = 16MHz
+		// 1ms = 16kHz
+	SysTick->LOAD = (SystemCoreClock/1000) - 1;
+	
+	toggleLED(pin);
+	
+	
+	while(1)
+	{
+		GPIOD->ODR	|= SBIT(pin);
+		for(int i=0; i < 1000; i++)
+			while( ! (SysTick->CTRL & (1<<16) ));
+		
+		GPIOD->ODR	&= RBIT(pin);
+		for(int i=0; i < 1000; i++)
+			while( ! (SysTick->CTRL & (1<<16) ));
+	}
+
+}
+
+
+void toggleLED(uint8_t pin)
+{
+	// General purpose output mode
+	GPIOD->MODER |= SBIT((2*pin));
+	GPIOD->MODER &= RBIT((2*pin)+1);
+
+	// Output Push Pull
+	GPIOD->OTYPER &= RBIT(pin);
+
+	// Medium Speed
+	GPIOD->OSPEEDR |= SBIT((2*pin));
+	GPIOD->OSPEEDR &= RBIT(((2*pin)+1));
+
+	
+}
+
+void ConfigRCC(void)
+{
+	RCC->CR &= RBIT(24); // PLLON Disable
+
+	RCC->CR |= SBIT(16); // set external Clock
+	while(!CBIT(RCC->CR,17)); // check ready flag
+
+	// These bits can only enable when PLL is disable
+	// VCO input frequency = PLL input clock frequency / PLLM
+	// VCO input frequency = 8MHz/2 = 2MHz
+	RCC->PLLCFGR |= SBIT(4);
+
+	// VCO output frequency = VCO input frequency × PLLN
+	// VCO output frequency = 2MHz * 50 = 100MHz
+	RCC->PLLCFGR |= SBIT(7);
+	RCC->PLLCFGR |= SBIT(10);
+	RCC->PLLCFGR |= SBIT(11);
+	RCC->PLLCFGR &= RBIT(12);
+	RCC->PLLCFGR &= RBIT(13);
+	RCC->PLLCFGR &= RBIT(14);
+
+	// PLL output clock frequency = VCO frequency / PLLP
+	// PLL output clock frequency = 100MHz/2 = 50MHz
+	// This Time clock is running at 50 Mhz
+	RCC->PLLCFGR &= RBIT(16);
+	RCC->PLLCFGR &= RBIT(17);
+
+	RCC->CR |= SBIT(24); // PLLON enable
+	RCC->CFGR |= SBIT(1); // PLL selected as system clock
+
+	while(! CBIT( (RCC->CFGR),3) );
+
+	RCC->CFGR &= RBIT(7);
+	RCC->CFGR &= RBIT(12);
+	RCC->CFGR &= RBIT(15);
+
+}
+
+
+
+void enablePeripherialCLK(void)
+{
+	// Enable GPIO port-D
+	RCC->AHB1ENR |= SBIT(3);
+	
+}
