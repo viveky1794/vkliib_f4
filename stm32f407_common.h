@@ -1,6 +1,6 @@
 
 #define SBIT(x)	((1<<x)) // Set Bit
-#define RBIT(x)	(0<<x) // Reset  Bit 
+#define RBIT(x)	~(SBIT(x)) // Reset  Bit 
 #define CBIT(x,y)	( ( (x)>>y ) & 0x1 ) // Check Bit
 
 
